@@ -17,8 +17,15 @@ def prepare_data(filename, dpath="data", save_filename="titanic_prepared.csv"):
     titanic_data=pd.read_csv(os.path.join(dpath,filename),sep=",")
     
     ##################################
+    titanic_data.index = titanic_data['PassengerId']
     
+    titanic_data = pd.get_dummies(titanic_data 
+                                  ,columns=['Pclass', 'Sex', 'SibSp', 'Cabin', 'Embarked']
+                                  ,prefix=['Pclass', 'Sex', 'SibSp', 'Cabin', 'Embarked'])
 
+    titanic_data = titanic_data.drop(['Ticket', 'PassengerId', 'Name'], axis=1)
+
+    
     #legData.dep_dt_scd=pd.to_datetime(legData.dep_dt_scd)
     #legData.arr_dt_scd=pd.to_datetime(legData.arr_dt_scd)
     #legData["rotation"]=legData.ac_registration+legData.flt_date.astype(str)
