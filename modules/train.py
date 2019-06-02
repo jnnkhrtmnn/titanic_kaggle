@@ -78,6 +78,8 @@ model3 = Ridge(alpha=40)
 import numpy as np
 y = y 
 
+for i in (1:5):
+    
 model1.fit(X,y)
 model2.fit(X,y)
 model3.fit(X,y)
