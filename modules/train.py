@@ -6,6 +6,7 @@ Created on Wed May 15 17:41:27 2019
 """
 
 from modules.prepare_data import prepare_data
+import pandas as pd
 
 dpath="data/"
 filename ="train.csv"
@@ -14,7 +15,7 @@ filename ="train.csv"
 y_X = prepare_data(filename)
 
 
-#y_X = y_X.dropna()
+y_X = y_X.dropna()
 
 X = y_X.drop('Survived', axis=1)
 y = y_X['Survived']
@@ -29,27 +30,37 @@ y = y_X['Survived']
 
 from modules.model_cv_testing import cv_testing
 
-from sklearn.neural_network import MLPRegressor
+from sklearn.neural_network import MLPClassifier
+cv_testing(X, y, model=MLPClassifier(hidden_layer_sizes = [30,10],
+                             activation = "logistic",
+                             alpha = 0.005,
+                             solver = 'lbfgs'), cv=5)
 
 
-#cv_testing(X, y, model=MLPRegressor(hidden_layer_sizes = [100,100],
-#                             activation = "relu",
-#                             alpha = 0.001,
-#                             solver = 'lbfgs'), cv=10)
+from sklearn.tree import DecisionTreeClassifier
+cv_testing(X, y, model=DecisionTreeClassifier(criterion='gini'
+                                              ,max_depth=3
+                                              ,min_samples_leaf=1
+                                              ,min_samples_split=0.1
+                                              ,random_state=None
+                                              ,max_features=None
+                                              ), cv=5)
 
-###############################
-#from sklearn.neural_network import MLPRegressor
-#model=MLPRegressor(hidden_layer_sizes = [50,3],
-#                             activation = "tanh",
-#                             alpha = 0.001,
-#                             solver = 'lbfgs')
+from xgboost import XGBClassifier
 
-from xgboost import XGBRegressor
+
+
+
+
+
+
+
+
 model1 = XGBRegressor(n_estimators=100, learning_rate=0.05, gamma=0.01, subsample=0.75,
                           colsample_bytree=0.8, max_depth=5)
 
 
-from sklearn.ensemble import RandomForestRegressor
+from sklearn import RandomForestRegressor
 model2 = RandomForestRegressor(bootstrap=True, criterion='mse', max_depth=5,
                      max_features=10, max_leaf_nodes=10,
                      min_impurity_decrease=0.0, min_impurity_split=None,
@@ -95,8 +106,6 @@ X_test_ind = list(X_test.index)
 X_test = X_test.fillna(0)
 
 
-X_test = scaler_X.transform(X_test)
-
 
 preds1 = model1.predict(X_test)
 preds2 = model2.predict(X_test)
@@ -104,13 +113,14 @@ preds3 = model3.predict(X_test)
 
 
 preds = pd.DataFrame(preds1, index=X_test_ind)
+
 preds['1'] = preds2 
 preds['2'] = preds3
-preds['delay'] = preds[[0, '1', '2']].mean(axis=1)
+preds['Survived'] = preds[[0, '1', '2']].mean(axis=1)
 
 preds = preds.drop([0,'1','2'], axis=1)
 
-preds['delay'] = preds['delay']
+
 ###############################
 
 from modules.preds_to_csv import preds_to_sub_csv
