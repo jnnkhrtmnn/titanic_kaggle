@@ -6,7 +6,6 @@ Created on Wed May 15 17:41:27 2019
 """
 ###############################################################################
 
-from modules.prepare_data import prepare_data
 import pandas as pd
 import os
 
@@ -16,6 +15,8 @@ filename_test ="test.csv"
     
 y_X = pd.read_csv(os.path.join(dpath,filename_train),sep=",")
     
+len_train = len(y_X)
+
 y_X = y_X.append(pd.read_csv(os.path.join(dpath,filename_test),sep=","), sort=True)
 
 y_X.index = y_X['PassengerId']
@@ -23,26 +24,76 @@ y_X.index = y_X['PassengerId']
 X = y_X.drop('Survived', axis=1)
 y = y_X['Survived']
 
-# drop unused vars
-X = X.drop(['Ticket', 'PassengerId', 'Name', 'Cabin'], axis=1)
 
-# get dummies for categorical variables    
-X = pd.get_dummies(X, columns=['Pclass', 'Sex', 'SibSp', 'Embarked']
-                    , prefix=['Pclass', 'Sex', 'SibSp', 'Embarked'])
+###############################################################################
+
+X.describe()
+
+# drop unused vars
+X = X.drop(['Ticket', 'PassengerId', 'Cabin'], axis=1)
+
 
 # impute age with median if missing
 X['Age'] = X['Age'].fillna(X['Age'].median())
 
 
-#X = X.dropna()
+titles_raw = set()
+for x_name in X['Name']:
+    titles_raw.add(x_name.split(',')[1].split('.')[0].strip())
 
-# Names
+X['Title'] = X['Name'].map(lambda x_name : x_name.split(',')[1].split('.')[0].strip())
+
+# use title to define groups
+title_grouping = {'Jonkheer' : 'nobile'
+                  ,'the Countess' : 'nobile'
+                  ,'Sir' : 'nobile'
+                  ,'Lady' : 'nobile'
+                  ,'Don' : 'nobile'
+                  ,'Dona' : 'nobile'
+                  ,'Capt' : 'military'
+                  ,'Col' : 'military'
+                  ,'Major' : 'military'
+                  ,'Rev' : 'military'
+                  ,'Mr' : 'Mr'
+                  ,'Mrs' : 'Mrs'
+                  ,'Ms' : 'Ms'
+                  ,'Mme' : 'Mrs'
+                  ,'Mlle' : 'Ms'
+                  ,'Miss' : 'Ms'
+                  ,'Dr' : 'other'
+                  ,'Master' : 'other'}
+    
+X['Title'] = X.Title.map(title_grouping)
+
+X = X.drop(['Name'], axis=1)
+
+X['Fare'].describe()
+X['Fare'] = X['Fare'].fillna(X['Fare'].median())
+
+# fares
+#import seaborn as sns
+#sns.distplot(X['Fare'])
+
+# maybe built some buckets
 
 
 
 
 
 
+
+
+# parch
+# sibsp
+# cabin
+
+# get dummies for categorical variables    
+X = pd.get_dummies(X, columns=['Pclass', 'Sex', 'SibSp', 'Embarked', 'Title']
+                    , prefix=['Pclass', 'Sex', 'SibSp', 'Embarked', 'Title'])
+
+
+
+X = X.dropna()
 
 
 #from sklearn.preprocessing import MinMaxScaler
@@ -53,18 +104,20 @@ X['Age'] = X['Age'].fillna(X['Age'].median())
 
 ###############################################################################
 
+X_train, X_test, y_train = X.iloc[:len_train,], X.iloc[len_train:,], y.iloc[:len_train,]
+
 # Use cross validation to choose features. models and parameters
 from modules.model_cv_testing import cv_testing
 
 from sklearn.neural_network import MLPClassifier
-cv_testing(X, y, model=MLPClassifier(hidden_layer_sizes = [30,10],
+cv_testing(X_train, y_train, model=MLPClassifier(hidden_layer_sizes = [30,10],
                              activation = "logistic",
                              alpha = 0.005,
                              solver = 'lbfgs'), cv=5)
 
 
 from sklearn.tree import DecisionTreeClassifier
-cv_testing(X, y, model=DecisionTreeClassifier(criterion='gini'
+cv_testing(X_train, y_train, model=DecisionTreeClassifier(criterion='gini'
                                               ,max_depth=3
                                               ,min_samples_leaf=1
                                               ,min_samples_split=0.1
@@ -91,7 +144,7 @@ model1 = RandomForestClassifier(n_estimators=100, max_depth=100, criterion='entr
 
 from sklearn import svm
 model2 = svm.SVC(C=0.2, class_weight=None, coef0=4.0,
-    decision_function_shape='ovr', degree=4, gamma=0.01, kernel='poly',
+    decision_function_shape='ovr', degree=2, gamma=0.01, kernel='poly',
     max_iter=-1, probability=False, verbose=False)
 
 from sklearn.naive_bayes import GaussianNB
@@ -113,8 +166,7 @@ models = [model1, model2, model3, model4, model5]
 
 ###############################################################################
   
-# preprocess test data
-X_test = prepare_data("test.csv", save_filename="test_prepared.csv")
+# get test data index
 X_test_ind = list(X_test.index)
 
 
@@ -126,7 +178,7 @@ X_test = X_test.fillna(0)
 # fit models and store predictions
 for i in range(len(models)):
     model = models[i]
-    model.fit(X,y)
+    model.fit(X_train,y_train)
     preds_mat[index[i]] = model.predict(X_test)
 
     
