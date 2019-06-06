@@ -20,10 +20,11 @@ def prepare_data(filename, dpath="data", save_filename="titanic_prepared.csv"):
     titanic_data.index = titanic_data['PassengerId']
     
     titanic_data = pd.get_dummies(titanic_data 
-                                  ,columns=['Pclass', 'Sex', 'SibSp', 'Cabin', 'Embarked']
-                                  ,prefix=['Pclass', 'Sex', 'SibSp', 'Cabin', 'Embarked'])
+                                  ,columns=['Pclass', 'Sex', 'SibSp', 'Embarked']
+                                  ,prefix=['Pclass', 'Sex', 'SibSp', 'Embarked'])
 
-    titanic_data = titanic_data.drop(['Ticket', 'PassengerId', 'Name'], axis=1)
+
+    titanic_data = titanic_data.drop(['Ticket', 'PassengerId', 'Name', 'Cabin'], axis=1)
 
     
     #legData.dep_dt_scd=pd.to_datetime(legData.dep_dt_scd)
