@@ -42,7 +42,7 @@ X['Age'] = X['Age'].fillna(X['Age'].median())
 
 
 #set up bins
-bins = [-1,18,35,43,100]
+bins = [-1,18,35,48,100]
 age_labels = ['young', 'mid_young', 'mid_old', 'old']
 categ = pd.cut(X.Age,bins, labels=age_labels)
 categ = pd.DataFrame(categ)
@@ -95,16 +95,16 @@ X['Fare'] = X['Fare'].fillna(X['Fare'].median())
 #sns.distplot(X['Fare'][:len_train][y==0], hist=False)
 
 # maybe built some buckets; has not been successful
-# bins = [-1, 5, 10, 50, 70, 1000]
-#fares_labels = [0,1,2,3,4]
-#categ = pd.cut(X.Fare, bins, labels=fares_labels)
-#categ = pd.DataFrame(categ)
-#categ.columns = ['Fare_categ']
+bins = [-1, 5, 10, 50, 70, 1000]
+fares_labels = [0,1,2,3,4]
+categ = pd.cut(X.Fare, bins, labels=fares_labels)
+categ = pd.DataFrame(categ)
+categ.columns = ['Fare_categ']
 
 #y.groupby(X['Fare_categ']).mean()
-#X = X.join(categ)
-#X['Fare_categ'] = X['Fare_categ'].astype(int)
-#X = X.drop(['Fare'], axis=1)
+X = X.join(categ)
+X['Fare_categ'] = X['Fare_categ'].astype(int)
+X = X.drop(['Fare'], axis=1)
 
 
 # sibsp join with Parch
@@ -140,8 +140,8 @@ X.loc[X['Cabin'].isin(['C', 'F']), 'Cabin'] = 'CF'
 
 
 # get dummies for categorical variables    
-X = pd.get_dummies(X, columns=['Pclass', 'Sex', 'fam_categ', 'Embarked', 'Title', 'Age_categ', 'Cabin']
-                    , prefix=['Pclass', 'Sex', 'fam_categ', 'Embarked', 'Title', 'Age_categ', 'Cabin'])
+X = pd.get_dummies(X, columns=['Pclass', 'Sex', 'fam_categ', 'Embarked', 'Title', 'Age_categ', 'Cabin', 'Fare_categ']
+                    , prefix=['Pclass', 'Sex', 'fam_categ', 'Embarked', 'Title', 'Age_categ', 'Cabin', 'Fare_categ'])
 
 
 X = X.dropna()
@@ -176,7 +176,7 @@ svm_params = {'C' : 12
              ,'kernel' : 'poly'
              ,'probability' : True}
 
-#cv_testing(X_train, y_train, model=svm.SVC(**svm_params), cv=5)
+cv_testing(X_train, y_train, model=svm.SVC(**svm_params), cv=5)
 
 
 from sklearn.neural_network import MLPClassifier
@@ -207,12 +207,24 @@ xgb_params = {'base_score' : 0.5
 cv_testing(X_train, y_train, model=XGBClassifier(**xgb_params), cv=5)
 
 
+from sklearn.linear_model import LogisticRegression
+lr_params = {'penalty' : 'l2'
+            ,'C' : 1
+            ,'solver' : 'liblinear'}
+
+cv_testing(X_train, y_train, model=LogisticRegression(**lr_params), cv=5)
+
+
+from sklearn.neighbors import KNeighborsClassifier
+knn_params = {'n_neighbors' : 3}
+
+cv_testing(X_train, y_train, model=KNeighborsClassifier(**knn_params), cv=5)
 
 ###############################################################################
 ###############################################################################
 
 # create table for storing predictions
-index = ["RF", "SVM", "MLP", "XGB"]
+index = ['RF', 'MLP', 'XGB', 'SVM', 'LR']
 preds_mat = pd.DataFrame(columns=index)
 
 
@@ -220,20 +232,19 @@ preds_mat = pd.DataFrame(columns=index)
 
 # define models
 model1 = RandomForestClassifier(**rf_params)
-model2 = svm.SVC(**svm_params)
-model3 = MLPClassifier(**mlp_params) 
-model4 = XGBClassifier(**xgb_params)
+model2 = MLPClassifier(**mlp_params) 
+model3 = XGBClassifier(**xgb_params)
+model4 = svm.SVC(**svm_params)
+model5 = LogisticRegression(**lr_params)
 
-models = [model1, model2, model3, model4]
+models = [model1, model2, model3]
 
 ###############################################################################
   
 # get test data index
 X_test_ind = list(X_test.index)
 
-
 X_test = X_test.fillna(0)
-
 
 ###############################################################################
 
