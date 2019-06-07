@@ -30,17 +30,20 @@ y = y_X['Survived']
 X.describe()
 
 # drop unused vars
-X = X.drop(['PassengerId', 'Cabin', 'Ticket'], axis=1)
+X = X.drop(['PassengerId', 'Ticket'], axis=1)
 
 
 # impute age with median if missing
 X['Age'] = X['Age'].fillna(X['Age'].median())
 
 #import seaborn as sns
-#sns.distplot(X['Age'])
+#sns.distplot(X['Age'][:len_train][y==1], hist=False)
+#sns.distplot(X['Age'][:len_train][y==0], hist=False)
+
+
 #set up bins
-bins = [-1,16,50,100]
-age_labels = ['young', 'mid', 'old']
+bins = [-1,18,35,43,100]
+age_labels = ['young', 'mid_young', 'mid_old', 'old']
 categ = pd.cut(X.Age,bins, labels=age_labels)
 categ = pd.DataFrame(categ)
 categ.columns = ['Age_categ']
@@ -85,25 +88,57 @@ X['Fare'] = X['Fare'].fillna(X['Fare'].median())
 
 # fares
 #import seaborn as sns
-#sns.distplot(X['Fare'])
+#sns.distplot(X['Fare'][:len_train][y==1], hist=False)
+#sns.distplot(X['Fare'][:len_train][y==0], hist=False)
+
 # maybe built some buckets; has not been successful
+# bins = [-1, 5, 10, 50, 70, 1000]
+#fares_labels = [0,1,2,3,4]
+#categ = pd.cut(X.Fare, bins, labels=fares_labels)
+#categ = pd.DataFrame(categ)
+#categ.columns = ['Fare_categ']
+
+#y.groupby(X['Fare_categ']).mean()
+#X = X.join(categ)
+#X['Fare_categ'] = X['Fare_categ'].astype(int)
+#X = X.drop(['Fare'], axis=1)
 
 
-# sibsp
+# sibsp join with Parch
+X['family'] = X['Parch'] + X['SibSp']
+
+y.groupby(X['family']).mean()
+
 #set up bins
-bins = [-1,0,4,9]
-SibSp_labels = ['0', 'few', 'large']
-categ = pd.cut(X.SibSp,bins, labels=SibSp_labels)
+bins = [-1,0,3,10]
+fam_labels = ['0', 'few', 'large']
+categ = pd.cut(X.family, bins, labels=fam_labels)
 categ = pd.DataFrame(categ)
-categ.columns = ['SibSp_categ']
+categ.columns = ['fam_categ']
 #concatenate age and its bin
 X = X.join(categ)
-X = X.drop(['SibSp'], axis=1)
+X = X.drop(['SibSp', 'Parch', 'family'], axis=1)
+
+
+
+X['Cabin'] = X['Cabin'].fillna('U')
+
+cabins = set()
+for row in X['Cabin']:
+    cabins.add(row[0].strip())
+
+X['Cabin'] = X['Cabin'].map(lambda row : row[0].strip())
+
+y.groupby(X['Cabin']).mean()
+# merge B, D, E and C,F
+X.loc[X['Cabin'].isin(['B', 'D', 'E']), 'Cabin'] = 'BDE'
+X.loc[X['Cabin'].isin(['C', 'F']), 'Cabin'] = 'CF'
+
 
 
 # get dummies for categorical variables    
-X = pd.get_dummies(X, columns=['Pclass', 'Sex', 'SibSp_categ', 'Embarked', 'Title', 'Age_categ']
-                    , prefix=['Pclass', 'Sex', 'SibSp_categ', 'Embarked', 'Title', 'Age_categ'])
+X = pd.get_dummies(X, columns=['Pclass', 'Sex', 'fam_categ', 'Embarked', 'Title', 'Age_categ', 'Cabin']
+                    , prefix=['Pclass', 'Sex', 'fam_categ', 'Embarked', 'Title', 'Age_categ', 'Cabin'])
 
 
 X = X.dropna()
@@ -123,14 +158,14 @@ X_train, X_test, y_train = X.iloc[:len_train,], X.iloc[len_train:,], y.iloc[:len
 from modules.model_cv_testing import cv_testing
 
 from sklearn.ensemble import RandomForestClassifier
-cv_testing(X_train, y_train, model=RandomForestClassifier(n_estimators=200, 
-                                                          min_samples_split=4, 
-                                                          criterion='entropy',
+cv_testing(X_train, y_train, model=RandomForestClassifier(n_estimators=500, 
+                                                          min_samples_split=7, 
+                                                          criterion='gini',
                                                           oob_score=False), cv=5)
 
 from sklearn import svm
-cv_testing(X_train, y_train, model=svm.SVC(C=0.2, class_weight=None, coef0=8.0, 
-                                           degree=2, gamma=0.01, 
+cv_testing(X_train, y_train, model=svm.SVC(C=12, class_weight=None, coef0=1.0, 
+                                           degree=2, gamma=0.05, 
                                            kernel='poly', 
                                            probability=True), cv=5)
 
