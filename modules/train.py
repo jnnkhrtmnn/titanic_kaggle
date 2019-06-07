@@ -140,8 +140,10 @@ X.loc[X['Cabin'].isin(['C', 'F']), 'Cabin'] = 'CF'
 
 
 # get dummies for categorical variables    
-X = pd.get_dummies(X, columns=['Pclass', 'Sex', 'fam_categ', 'Embarked', 'Title', 'Age_categ', 'Cabin', 'Fare_categ']
-                    , prefix=['Pclass', 'Sex', 'fam_categ', 'Embarked', 'Title', 'Age_categ', 'Cabin', 'Fare_categ'])
+X = pd.get_dummies(X, columns=['Pclass', 'Sex', 'fam_categ', 'Embarked', 
+                               'Title', 'Age_categ', 'Cabin', 'Fare_categ']
+                    , prefix=['Pclass', 'Sex', 'fam_categ', 'Embarked', 
+                              'Title', 'Age_categ', 'Cabin', 'Fare_categ'])
 
 
 X = X.dropna()
@@ -155,7 +157,9 @@ X = X.dropna()
 
 ###############################################################################
 
-X_train, X_test, y_train = X.iloc[:len_train,], X.iloc[len_train:,], y.iloc[:len_train,]
+X_train, X_test = X.iloc[:len_train,], X.iloc[len_train:,]
+y_train =  y.iloc[:len_train,]
+
 
 # Use cross validation to choose features. models and parameters
 from modules.model_cv_testing import cv_testing
