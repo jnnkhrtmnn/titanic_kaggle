@@ -80,8 +80,11 @@ title_grouping = {'Jonkheer' : 'nobile'
                   ,'Master' : 'other'}
     
 X['Title'] = X.Title.map(title_grouping)
-
 X = X.drop(['Name'], axis=1)
+
+y.groupby(X['Title']).mean()
+
+
 
 X['Fare'].describe()
 X['Fare'] = X['Fare'].fillna(X['Fare'].median())
@@ -158,37 +161,50 @@ X_train, X_test, y_train = X.iloc[:len_train,], X.iloc[len_train:,], y.iloc[:len
 from modules.model_cv_testing import cv_testing
 
 from sklearn.ensemble import RandomForestClassifier
-cv_testing(X_train, y_train, model=RandomForestClassifier(n_estimators=500, 
-                                                          min_samples_split=7, 
-                                                          criterion='gini',
-                                                          oob_score=False), cv=5)
+rf_params = {'n_estimators' : 500
+            ,'min_samples_split' : 7
+            ,'criterion' : 'gini'}
+
+cv_testing(X_train, y_train, model=RandomForestClassifier(**rf_params), cv=5)
 
 from sklearn import svm
-cv_testing(X_train, y_train, model=svm.SVC(C=12, class_weight=None, coef0=1.0, 
-                                           degree=2, gamma=0.05, 
-                                           kernel='poly', 
-                                           probability=True), cv=5)
+svm_params = {'C' : 12
+             ,'class_weight' : None
+             ,'coef0' : 1.0
+             ,'degree' : 2
+             ,'gamma' : 0.05
+             ,'kernel' : 'poly'
+             ,'probability' : True}
+
+#cv_testing(X_train, y_train, model=svm.SVC(**svm_params), cv=5)
 
 
 from sklearn.neural_network import MLPClassifier
-cv_testing(X_train, y_train, model=MLPClassifier(hidden_layer_sizes = [20,5],
-                             activation = "logistic",
-                             alpha = 0.01,
-                             solver = 'lbfgs'), cv=5)
+mlp_params = {'hidden_layer_sizes' : [20,5]
+             ,'activation' : 'logistic'
+             ,'alpha' : 0.01
+             ,'solver' : 'lbfgs'}
+
+cv_testing(X_train, y_train, model=MLPClassifier(**mlp_params), cv=5)
 
 from xgboost import XGBClassifier 
-cv_testing(X_train, y_train, model=XGBClassifier(base_score=0.5, booster='gbtree', 
-                                                 colsample_bylevel=1,
-                                                 colsample_bytree=0.9, 
-                                                 gamma=0.0, learning_rate=0.1, 
-                                                 max_delta_step=0,
-                                                 max_depth=50, 
-                                                 min_child_weight=1,
-                                                 n_estimators=30,
-                                                 objective='binary:logistic', 
-                                                 reg_alpha=0, reg_lambda=5, 
-                                                 scale_pos_weight=1, 
-                                                 subsample=1), cv=5)
+xgb_params = {'base_score' : 0.5
+             ,'booster' : 'gbtree' 
+             ,'colsample_bylevel' : 1
+             ,'colsample_bytree' : 0.9
+             ,'gamma' : 0.0
+             ,'learning_rate' : 0.1
+             ,'max_delta_step' : 0
+             ,'max_depth' : 50 
+             ,'min_child_weight' : 1
+             ,'n_estimators' : 50
+             ,'objective' : 'binary:logistic' 
+             ,'reg_alpha' : 0.2
+             ,'reg_lambda' : 2 
+             ,'scale_pos_weight' : 1
+             ,'subsample' : 1}
+
+cv_testing(X_train, y_train, model=XGBClassifier(**xgb_params), cv=5)
 
 
 
@@ -203,26 +219,10 @@ preds_mat = pd.DataFrame(columns=index)
 ###############################################################################
 
 # define models
-from sklearn.ensemble import RandomForestClassifier
-model1 = RandomForestClassifier(n_estimators=500, max_depth=10, criterion='entropy',
-                             oob_score=True)
-
-from sklearn import svm
-model2 = svm.SVC(C=0.2, class_weight=None, coef0=4.0,
-    decision_function_shape='ovr', degree=2, gamma=0.01, kernel='poly',
-    max_iter=-1, probability=False, verbose=False)
-
-from sklearn.neural_network import MLPClassifier
-model3 = MLPClassifier(solver='lbfgs', activation='logistic', alpha=0.005,
-                    hidden_layer_sizes=(30, 10))
-
-from xgboost import XGBClassifier 
-model4 = XGBClassifier(base_score=0.5, booster='gbtree', colsample_bylevel=1,
-       colsample_bytree=0.9, gamma=0.0, learning_rate=0.1, max_delta_step=0,
-       max_depth=50, min_child_weight=1, missing=None, n_estimators=800,
-       n_jobs=1, nthread=None, objective='binary:logistic', random_state=0,
-       reg_alpha=0, reg_lambda=5, scale_pos_weight=1, seed=None,
-       silent=True, subsample=1)
+model1 = RandomForestClassifier(**rf_params)
+model2 = svm.SVC(**svm_params)
+model3 = MLPClassifier(**mlp_params) 
+model4 = XGBClassifier(**xgb_params)
 
 models = [model1, model2, model3, model4]
 
