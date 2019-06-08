@@ -175,7 +175,7 @@ from sklearn import svm
 svm_params = {'C' : 12
              ,'class_weight' : None
              ,'coef0' : 1.0
-             ,'degree' : 2
+             ,'degree' : 3
              ,'gamma' : 0.05
              ,'kernel' : 'poly'
              ,'probability' : True}
@@ -241,7 +241,7 @@ model3 = XGBClassifier(**xgb_params)
 model4 = svm.SVC(**svm_params)
 model5 = LogisticRegression(**lr_params)
 
-models = [model1, model2, model3]
+models = [model1, model2, model3, model4, model5]
 
 ###############################################################################
   
@@ -274,8 +274,5 @@ preds_mat.loc[preds_mat['majority_vote'] >= 0.5, 'majority_vote'] = 1
 from modules.preds_to_csv import preds_to_sub_csv
 path = "submissions/"
 preds_to_sub_csv(path, preds_mat['majority_vote'], ind=X_test_ind)
-
-
-
 
 
