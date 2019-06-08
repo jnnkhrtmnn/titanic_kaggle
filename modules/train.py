@@ -34,7 +34,12 @@ X = X.drop(['PassengerId', 'Ticket'], axis=1)
 
 
 # impute age with median if missing
+import numpy as np
+np.isnan(X['Age']).sum()
+# many nans here, so maybe fill with more sophisticated technique; does not work better
 X['Age'] = X['Age'].fillna(X['Age'].median())
+
+#X["Age"] = X.groupby(['Sex','Pclass'])['Age'].transform(lambda x: x.fillna(x.median()))
 
 #import seaborn as sns
 #sns.distplot(X['Age'][:len_train][y==1], hist=False)
@@ -48,7 +53,7 @@ categ = pd.cut(X.Age,bins, labels=age_labels)
 categ = pd.DataFrame(categ)
 categ.columns = ['Age_categ']
 X = X.join(categ)
-X = X.drop(['Age'], axis=1)
+#X = X.drop(['Age'], axis=1)
 
 
 
@@ -104,7 +109,7 @@ categ.columns = ['Fare_categ']
 #y.groupby(X['Fare_categ']).mean()
 X = X.join(categ)
 X['Fare_categ'] = X['Fare_categ'].astype(int)
-X = X.drop(['Fare'], axis=1)
+#X = X.drop(['Fare'], axis=1)
 
 
 # sibsp join with Parch
@@ -120,7 +125,7 @@ categ = pd.DataFrame(categ)
 categ.columns = ['fam_categ']
 #concatenate age and its bin
 X = X.join(categ)
-X = X.drop(['SibSp', 'Parch', 'family'], axis=1)
+#X = X.drop(['SibSp', 'Parch', 'family'], axis=1)
 
 
 
@@ -134,8 +139,14 @@ X['Cabin'] = X['Cabin'].map(lambda row : row[0].strip())
 
 y.groupby(X['Cabin']).mean()
 # merge B, D, E and C,F
-X.loc[X['Cabin'].isin(['B', 'D', 'E']), 'Cabin'] = 'BDE'
+X.loc[X['Cabin'].isin(['B', 'D', 'E', 'C', 'F', 'T', 'G', 'A']), 'Cabin'] = 'BDE'
 X.loc[X['Cabin'].isin(['C', 'F']), 'Cabin'] = 'CF'
+X.loc[X['Cabin'].isin(['T', 'G', 'A']), 'Cabin'] = 'TGA'
+
+
+
+# Ticket
+#len(np.unique(X['Ticket']))
 
 
 
@@ -149,11 +160,12 @@ X = pd.get_dummies(X, columns=['Pclass', 'Sex', 'fam_categ', 'Embarked',
 X = X.dropna()
 
 
-#from sklearn.preprocessing import MinMaxScaler
-#scaler_X = MinMaxScaler()
-#scaler_X.fit(X)
-#X = pd.DataFrame(scaler_X.transform(X))
-
+from sklearn.preprocessing import StandardScaler
+scaler_X = StandardScaler()
+scaler_X.fit(X[['Age', 'Fare', 'Parch', 'SibSp', 'family']])
+X[['Age', 'Fare', 'Parch', 'SibSp', 'family']] = pd.DataFrame(scaler_X.transform(X[['Age', 'Fare', 'Parch', 'SibSp', 'family']]))
+# only transform numeric columns for svm
+# 
 
 ###############################################################################
 
@@ -172,13 +184,14 @@ rf_params = {'n_estimators' : 500
 cv_testing(X_train, y_train, model=RandomForestClassifier(**rf_params), cv=5)
 
 from sklearn import svm
-svm_params = {'C' : 12
+svm_params = {'C' : 2
              ,'class_weight' : None
              ,'coef0' : 1.0
-             ,'degree' : 3
+             ,'degree' : 2
              ,'gamma' : 0.05
              ,'kernel' : 'poly'
-             ,'probability' : True}
+             ,'probability' : True
+             ,'max_iter' : 1000000}
 
 cv_testing(X_train, y_train, model=svm.SVC(**svm_params), cv=5)
 
@@ -186,7 +199,7 @@ cv_testing(X_train, y_train, model=svm.SVC(**svm_params), cv=5)
 from sklearn.neural_network import MLPClassifier
 mlp_params = {'hidden_layer_sizes' : [20,5]
              ,'activation' : 'logistic'
-             ,'alpha' : 0.01
+             ,'alpha' : 2.8
              ,'solver' : 'lbfgs'}
 
 cv_testing(X_train, y_train, model=MLPClassifier(**mlp_params), cv=5)
@@ -274,5 +287,6 @@ preds_mat.loc[preds_mat['majority_vote'] >= 0.5, 'majority_vote'] = 1
 from modules.preds_to_csv import preds_to_sub_csv
 path = "submissions/"
 preds_to_sub_csv(path, preds_mat['majority_vote'], ind=X_test_ind)
+
 
 
