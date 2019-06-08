@@ -159,13 +159,11 @@ X = pd.get_dummies(X, columns=['Pclass', 'Sex', 'fam_categ', 'Embarked',
 
 X = X.dropna()
 
-
+num_features = ['Age', 'Fare', 'Parch', 'SibSp', 'family']
 from sklearn.preprocessing import StandardScaler
 scaler_X = StandardScaler()
-scaler_X.fit(X[['Age', 'Fare', 'Parch', 'SibSp', 'family']])
-X[['Age', 'Fare', 'Parch', 'SibSp', 'family']] = pd.DataFrame(scaler_X.transform(X[['Age', 'Fare', 'Parch', 'SibSp', 'family']]))
-# only transform numeric columns for svm
-# 
+scaler_X.fit(X[num_features])
+X[num_features] = pd.DataFrame(scaler_X.transform(X[num_features]))
 
 ###############################################################################
 
