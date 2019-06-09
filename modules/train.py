@@ -6,6 +6,11 @@ Created on Wed May 15 17:41:27 2019
 """
 ###############################################################################
 
+
+
+# use ticket data
+
+
 import pandas as pd
 import os
 
@@ -91,6 +96,24 @@ y.groupby(X['Title']).mean()
 
 
 
+
+
+# sibsp join with Parch
+X['family'] = X['Parch'] + X['SibSp']
+
+y.groupby(X['family']).mean()
+
+#set up bins
+bins = [-1,0,3,10]
+fam_labels = ['0', 'few', 'large']
+categ = pd.cut(X.family, bins, labels=fam_labels)
+categ = pd.DataFrame(categ)
+categ.columns = ['fam_categ']
+#concatenate age and its bin
+X = X.join(categ)
+#X = X.drop(['SibSp', 'Parch', 'family'], axis=1)
+
+# fare per person, assuming it is bought for whole family
 X['Fare'].describe()
 X['Fare'] = X['Fare'].fillna(X['Fare'].median())
 
@@ -110,23 +133,6 @@ categ.columns = ['Fare_categ']
 X = X.join(categ)
 X['Fare_categ'] = X['Fare_categ'].astype(int)
 #X = X.drop(['Fare'], axis=1)
-
-
-# sibsp join with Parch
-X['family'] = X['Parch'] + X['SibSp']
-
-y.groupby(X['family']).mean()
-
-#set up bins
-bins = [-1,0,3,10]
-fam_labels = ['0', 'few', 'large']
-categ = pd.cut(X.family, bins, labels=fam_labels)
-categ = pd.DataFrame(categ)
-categ.columns = ['fam_categ']
-#concatenate age and its bin
-X = X.join(categ)
-#X = X.drop(['SibSp', 'Parch', 'family'], axis=1)
-
 
 
 X['Cabin'] = X['Cabin'].fillna('U')
@@ -165,11 +171,21 @@ scaler_X = StandardScaler()
 scaler_X.fit(X[num_features])
 X[num_features] = pd.DataFrame(scaler_X.transform(X[num_features]))
 
+
 ###############################################################################
 
 X_train, X_test = X.iloc[:len_train,], X.iloc[len_train:,]
 y_train =  y.iloc[:len_train,]
 
+#from sklearn.cluster import DBSCAN
+#db = DBSCAN(eps=3.0, min_samples=10).fit(X_train)
+#labels = db.labels_
+
+#pd.Series(labels).value_counts()
+#X_train = X_train[labels==0]
+#y_train = y_train[labels==0]
+
+###############################################################################
 
 # Use cross validation to choose features. models and parameters
 from modules.model_cv_testing import cv_testing
@@ -180,7 +196,7 @@ rf_params = {'n_estimators' : 500
             ,'criterion' : 'gini'}
 
 cv_testing(X_train, y_train, model=RandomForestClassifier(**rf_params), cv=5)
-
+#82
 from sklearn import svm
 svm_params = {'C' : 2
              ,'class_weight' : None
@@ -192,7 +208,7 @@ svm_params = {'C' : 2
              ,'max_iter' : 1000000}
 
 cv_testing(X_train, y_train, model=svm.SVC(**svm_params), cv=5)
-
+#828
 
 from sklearn.neural_network import MLPClassifier
 mlp_params = {'hidden_layer_sizes' : [20,5]
@@ -201,7 +217,7 @@ mlp_params = {'hidden_layer_sizes' : [20,5]
              ,'solver' : 'lbfgs'}
 
 cv_testing(X_train, y_train, model=MLPClassifier(**mlp_params), cv=5)
-
+#818
 from xgboost import XGBClassifier 
 xgb_params = {'base_score' : 0.5
              ,'booster' : 'gbtree' 
@@ -220,7 +236,7 @@ xgb_params = {'base_score' : 0.5
              ,'subsample' : 1}
 
 cv_testing(X_train, y_train, model=XGBClassifier(**xgb_params), cv=5)
-
+#818
 
 from sklearn.linear_model import LogisticRegression
 lr_params = {'penalty' : 'l2'
@@ -228,12 +244,19 @@ lr_params = {'penalty' : 'l2'
             ,'solver' : 'liblinear'}
 
 cv_testing(X_train, y_train, model=LogisticRegression(**lr_params), cv=5)
-
+#819
 
 from sklearn.neighbors import KNeighborsClassifier
-knn_params = {'n_neighbors' : 3}
+knn_params = {'algorithm' : 'auto'
+              ,'leaf_size' : 26
+              ,'metric' : 'minkowski'
+              ,'metric_params' : None
+              ,'n_neighbors' : 18
+              ,'p' : 2
+              ,'weights' : 'uniform'}
 
 cv_testing(X_train, y_train, model=KNeighborsClassifier(**knn_params), cv=5)
+#79
 
 ###############################################################################
 ###############################################################################
